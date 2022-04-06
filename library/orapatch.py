@@ -26,6 +26,7 @@
                         servers or DBA workstations
     Python version:     3.x
 
+    Version:            3.0.0 Converted to Windows by Holger Sølberg / Cegal Sys , 20220405
 """
 
 # Import libraries
@@ -410,51 +411,51 @@ class PatchProcess(object):
 
         self.set_inventory()
 
-        # Prepare a command to check if the given oracle home is GI (CRS) home
-        command = "grep \"LOC=\\\"" + self.oracle_home + "\\\"\" " + g_inventory_file + " | grep -i \"CRS=\\\"true\\\"\" | wc -l"
-        output = self.run_os_command(command)
-        # If the given oracle home is GI (CRS) home, set "is_crs" to True
-        if output and int(output) == 1:
-            self.is_crs = True
-        else:
-            # Note: 11g homes does not have CRS attribute in inventory.xml
-            # Workaround: Check for ohasd.bin existence in $ORACLE_HOME/bin dir
-            command = "ls " + self.oracle_home + "/bin | grep -iw [o]hasd.bin | wc -l"
-            output = self.run_os_command(command)
-            if output and int(output) == 1:
-                self.is_crs = True
-            else:
-                self.is_crs = False
-
+    #    # Prepare a command to check if the given oracle home is GI (CRS) home
+    #    command = "grep \"LOC=\\\"" + self.oracle_home + "\\\"\" " + g_inventory_file + " | grep -i \"CRS=\\\"true\\\"\" | wc -l"
+    #    output = self.run_os_command(command)
+    #    # If the given oracle home is GI (CRS) home, set "is_crs" to True
+    #    if output and int(output) == 1:
+    #        self.is_crs = True
+    #    else:
+    #        # Note: 11g homes does not have CRS attribute in inventory.xml
+    #        # Workaround: Check for ohasd.bin existence in $ORACLE_HOME/bin dir
+    #        command = "ls " + self.oracle_home + "/bin | grep -iw [o]hasd.bin | wc -l"
+    #        output = self.run_os_command(command)
+    #        if output and int(output) == 1:
+    #            self.is_crs = True
+    #        else:
+    #            self.is_crs = False
 
         #start: check if is cluster
 
-        #todo: gf_is_cluster needs to be checked/validated
-        command = "ls " + self.oracle_home + "/bin | grep -iw [c]emutlo.bin | wc -l"
-        output = self.run_os_command(command)
-        if output and int(output) == 1:
-            command = self.oracle_home + "/bin/cemutlo -n"
-            output = self.run_os_command(command)
-            if (output):
-                self.is_cluster = True
-                self.cluster_name = str (output)
-
-        # # Check if the given oracle home is part of a clusterware
-        # if gf_is_cluster(self.oracle_home):
-        #     # Set indicator "is_cluster" to True
-        #     self.is_cluster = True
-        #     # Get cluster name
-        #     command = self.oracle_home + "/bin/cemutlo -n"
-        #     output = self.run_os_command(command)
-        #     self.cluster_name = str (output)
-
+    #    #todo: gf_is_cluster needs to be checked/validated
+    #    command = "ls " + self.oracle_home + "/bin | grep -iw [c]emutlo.bin | wc -l"
+    #    output = self.run_os_command(command)
+    #    if output and int(output) == 1:
+    #        command = self.oracle_home + "/bin/cemutlo -n"
+    #        output = self.run_os_command(command)
+    #        if (output):
+    #            self.is_cluster = True
+    #            self.cluster_name = str (output)
+    #
+    #    # # Check if the given oracle home is part of a clusterware
+    #    # if gf_is_cluster(self.oracle_home):
+    #    #     # Set indicator "is_cluster" to True
+    #    #     self.is_cluster = True
+    #    #     # Get cluster name
+    #    #     command = self.oracle_home + "/bin/cemutlo -n"
+    #    #     output = self.run_os_command(command)
+    #    #     self.cluster_name = str (output)
+    #
         #end: check if is cluster
 
 
         # Define oracle home installed version
         # 10/11/12
-        self.oh_version = self.get_oh_version(p_oracle_home)
+    #    self.oh_version = self.get_oh_version(p_oracle_home)
 
+        self.oh_version = "19"
         # If oracle home version is 10 or 11 define OCM file
         # OCM file is needed when patching 10g and 11g oracle homes
         if self.oh_version in g_supported_version_old and (g_function == "PATCH_OH" or g_function == "PATCH_OH_OJVM"):
@@ -472,16 +473,8 @@ class PatchProcess(object):
     def set_inventory(self):
         global g_inventory_file
 
-        v_orainst_file = self.oracle_home + "/oraInst.loc"
-        v_command = "[ -f " + v_orainst_file + " ] && echo 1 || echo 0"
+        v_command = "reg query HKLM\SOFTWARE\ORACLE /v inst_loc"
         output = self.run_os_command(v_command)
-
-        if int(output) == 1:
-            v_command = "grep inventory_loc " + v_orainst_file + " | awk -F= '{ print $2 }'"
-            output = self.run_os_command(v_command)
-        else:
-            v_command = "grep inventory_loc /etc/oraInst.loc | awk -F= '{ print $2 }'"
-            output = self.run_os_command(v_command)
 
         logger("Inventory location [inventory_loc]: " + output)
         g_inventory_file = output + "/ContentsXML/inventory.xml"
@@ -526,9 +519,9 @@ class PatchProcess(object):
         #   11g: libcell11.so
         #   12c: libcell12.so
         #command = "ls " + p_oracle_home + "/lib | grep libcell.*.so | awk '{ if ($0 == \"libcell10.so\"){ print 10 } if ($0 == \"libcell11.so\"){ print 11 } if ($0 == \"libcell12.so\") { print 12 } }'"
-        command = "ls " + p_oracle_home + "/lib | gawk 'match($0, /libcell([[:digit:]][[:digit:]])\.so/, res) { print res[1] }'"
-        v_result = self.run_os_command(command)
-
+        #command = "ls " + p_oracle_home + "/lib | gawk 'match($0, /libcell([[:digit:]][[:digit:]])\.so/, res) { print res[1] }'"
+        #v_result = self.run_os_command(command)
+        v_result = "19"
         if (v_result):
             return int(v_result)
 
